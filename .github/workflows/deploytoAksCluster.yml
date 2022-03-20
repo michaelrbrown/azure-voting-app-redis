@@ -1,0 +1,51 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: dccaks.azurecr.io
+        username: ${{ secrets.acr_dccaks_username }}
+        password: ${{ secrets.acr_dccaks_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/azure-vote" -f  "azure-vote/Dockerfile" -t dccaks.azurecr.io/dccacs:${{ github.sha }} --label dockerfile-path=azure-vote/Dockerfile
+        docker push dccaks.azurecr.io/dccacs:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_dccacs_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep azure-vote | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace azure-vote`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: azure-vote
+        container-registry-url: dccaks.azurecr.io
+        container-registry-username: ${{ secrets.acr_dccaks_username }}
+        container-registry-password: ${{ secrets.acr_dccaks_password }}
+        secret-name: dccacsdockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: azure-vote
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+          manifests/ingress.yml
+        images: |
+          dccaks.azurecr.io/dccacs:${{ github.sha }}
+        imagepullsecrets: |
+          dccacsdockerauth
