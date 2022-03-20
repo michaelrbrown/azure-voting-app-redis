@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "dccacs-a44e"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "dccacs-a44e"
+  template:
+    metadata:
+      labels:
+        app: "dccacs-a44e"
+    spec:
+      containers:
+        - name: "dccacs-a44e"
+          image: "dccaks.azurecr.io/dccacs"
+          ports:
+          - containerPort: 80
