@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+    name: "dccacs-a44e"
+    labels:
+        app: "dccacs-a44e"
+    annotations:
+        kubernetes.io/ingress.class: addon-http-application-routing
+spec:
+    rules:
+        - host: azure-vote-dccacs-a44e.bdcc5f07b38c440994fd.eastus.aksapp.io
+          http:
+            paths:
+            - path: /
+              backend:
+                serviceName: "dccacs-a44e"
+                servicePort: 80
